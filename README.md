@@ -8,11 +8,12 @@ An AI-powered personalised learning platform built with **React + Vite**, **Fire
 
 - 🎯 **AI Learning Roadmaps** – Generate personalised study plans using Google Gemini
 - 💬 **AI Tutor Chat** – Ask questions and get real-time tutoring support
+- 📚 **PDF Study Document Categorisation** – Upload and automatically categorize study materials
+- 🤖 **AI Tutor Personalities** – Chat with specialized AI tutors (e.g., Math Expert, General Tutor)
 - 🏆 **Gamification** – Earn points, badges, streaks, and level up as you learn
 - 👥 **Study Communities** – Create and join study groups, share posts and documents
 - 📅 **Study Sessions** – Schedule and join collaborative study sessions
 - 📈 **Leaderboard** – Compete and track rankings with other learners
-- 📊 **Crypto Market Tracker** – Live cryptocurrency data via CoinGecko API
 - 🔐 **Authentication** – Email/password and Google Sign-In via Firebase Auth
 
 ---
@@ -26,7 +27,64 @@ An AI-powered personalised learning platform built with **React + Vite**, **Fire
 | Charts | Recharts |
 | Backend / Auth | Firebase (Auth + Firestore + Storage) |
 | AI | Google Gemini API |
-| Market Data | CoinGecko API (free tier) |
+
+---
+
+## 🏗️ Technical Architecture
+
+The platform follows a modern, scalable client-serverless architecture leveraging Firebase for backend services and Google Gemini for AI capabilities. 
+
+### Frontend (React + Vite)
+- **Component-based UI**: Built with React hooks (`useState`, `useEffect`) and highly modular components.
+- **State Management**: React components manage user auth state, learning goals, and document uploads.
+- **Styling**: Vanilla CSS (`index.css`, `App.css`) with Lucide React for iconography.
+- **Build Tooling**: Vite for fast HMR (Hot Module Replacement) and optimized production builds.
+
+### Backend (Firebase)
+- **Authentication**: `firebase/auth` handling email/password and Google OAuth workflows.
+- **Database**: Cloud Firestore using NoSQL collections for:
+  - `users`: Profiles, study streaks, points, achievements.
+  - `goals`: User-defined academic goals and generated roadmaps.
+  - `communities` & `posts`: Study group interactions.
+  - `sessions`: Scheduled automated study sessions.
+- **Storage**: Firebase Storage for hosting student document uploads (PDFs, images).
+
+### AI Integration
+- **Gemini API**: Acts as the intelligence layer, dynamically incorporated via serverless calls (`geminiService.js`).
+- Structured prompt engineering ensures deterministic JSON outputs for roadmaps and formatted Markdown for the AI Tutor.
+
+---
+
+## 🛠️ Implementation Details
+
+### AI Learning Roadmaps
+The goal generation system fetches the user's country and academic level, feeding it into the Gemini 2.0 Flash model. The prompt enforces a restrictive JSON output format, parsed on the frontend to create a 5-step trackable roadmap saved directly to Firestore.
+
+### Context-Aware AI Tutor
+The tutor feature passes user profile parameters (education level, grade, country) along with the current discussion context to Gemini. It conditionally alters its personality through the `tutorSpecialty` parameter (e.g., General Tutor, Math Expert) to provide culturally and academically relevant explanations.
+
+### Gamification & Tracking
+User progress is tracked through Firestore observer patterns. Completing goals or logging in consecutively updates the `streak` and increments user points. Badges are dynamically awarded upon reaching thresholds (e.g., "7 Day Streak", "First Goal Completed") using the `checkAndAwardAchievements` utility.
+
+### Community & Study Groups
+Real-time listeners (`onSnapshot`) synchronize study group posts and user statuses. Users can upload specific study materials to Firebase Storage, attaching download URLs to community discussion threads for peer collaborative learning. 
+
+---
+
+## 🚧 Challenges Faced
+
+- **AI Formatting Inconsistencies**: The Gemini API occasionally returned Markdown formatting around JSON objects (e.g., \`\`\`json\`), which broke the roadmap generation. Implemented a robust RegExp cleanup step in `geminiService.js` to strip Markdown before parsing.
+- **Real-time State Synchronization**: Ensuring gamification points and streaks updated instantaneously across different browser tabs required careful management of Firestore listeners and React effects.
+- **Prompt Engineering Limitations**: Guiding the AI to provide age-appropriate, syllabus-aligned answers for varying educational systems required extensive prompt tuning to ensure instructions were strictly followed.
+
+---
+
+## 🗺️ Future Roadmap
+
+- **Interactive Quizzes**: Implement AI-generated micro-quizzes based on uploaded documents to test user knowledge dynamically.
+- **Video/Audio Chat Sessions**: Integrate WebRTC or a service like Agora for live peer-to-peer study sessions natively within the app.
+- **Mobile Application**: Port the React web app to React Native for a dedicated iOS and Android experience with native push notifications.
+- **Advanced Gamification**: Introduce seasonal leaderboards, customizable avatars, and in-game economy based on study hours.
 
 ---
 
