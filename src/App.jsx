@@ -21,6 +21,7 @@ const LearnPath = () => {
   const [currentGoal, setCurrentGoal] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [tutorSpecialty, setTutorSpecialty] = useState('General Tutor');
   const [isOnline, setIsOnline] = useState(true);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
@@ -75,9 +76,10 @@ const LearnPath = () => {
   const [showDocumentsTab, setShowDocumentsTab] = useState(false);
   const [documentFile, setDocumentFile] = useState(null);
   const [documentName, setDocumentName] = useState('');
+  const [documentCategory, setDocumentCategory] = useState('Notes');
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
   // Policy and Instructions
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
@@ -104,19 +106,11 @@ const LearnPath = () => {
   const [filterSessionCommunity, setFilterSessionCommunity] = useState('All');
   const [sortSessions, setSortSessions] = useState('newest');
   const [sessionPage, setSessionPage] = useState(1);
-  
+
   // Resource viewer state
   const [selectedResource, setSelectedResource] = useState(null);
   const [showResourcePage, setShowResourcePage] = useState(false);
 
-  // Market Data State - Cryptocurrency
-  const [marketData, setMarketData] = useState([]);
-  const [marketLoading, setMarketLoading] = useState(true);
-  const [marketError, setMarketError] = useState(null);
-  const [selectedMarketSymbol, setSelectedMarketSymbol] = useState('bitcoin');
-  const [marketChartType, setMarketChartType] = useState('1h');
-  const [marketRefreshTime, setMarketRefreshTime] = useState(new Date());
-  const [lastMarketUpdate, setLastMarketUpdate] = useState(null);
 
   // Point system configuration
   const POINT_SYSTEM = {
@@ -204,7 +198,7 @@ const LearnPath = () => {
             ...prev,
             totalLearningTime: (prev.totalLearningTime || 0) + elapsedSeconds
           }));
-          
+
           // Save to Firebase
           if (user && isFirebaseConfigured) {
             const statsRef = doc(db, 'users', user.uid, 'stats', 'overview');
@@ -234,74 +228,6 @@ const LearnPath = () => {
     return () => clearInterval(interval);
   }, [isLearningActive, sessionStartTime]);
 
-  // Fetch real-time cryptocurrency data from CoinGecko
-  const fetchCryptoData = async () => {
-    try {
-      setMarketError(null);
-      const cryptoIds = ['bitcoin', 'ethereum', 'cardano', 'solana', 'ripple', 'polkadot', 'dogecoin', 'litecoin'];
-      
-      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_high_low_24h=true`;
-      
-      console.log('Fetching crypto data from:', url);
-      
-      const response = await fetch(url);
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) throw new Error(`API returned status ${response.status}`);
-      
-      const data = await response.json();
-      
-      console.log('Crypto data received:', data);
-      
-      const cryptoNames = {
-        'bitcoin': 'Bitcoin',
-        'ethereum': 'Ethereum',
-        'cardano': 'Cardano',
-        'solana': 'Solana',
-        'ripple': 'Ripple (XRP)',
-        'polkadot': 'Polkadot',
-        'dogecoin': 'Dogecoin',
-        'litecoin': 'Litecoin'
-      };
-      
-      const formattedData = cryptoIds.map(id => {
-        const cryptoData = data[id];
-        return {
-          symbol: id.toUpperCase(),
-          id: id,
-          name: cryptoNames[id],
-          price: cryptoData.usd,
-          change24h: cryptoData.usd_24h_change || 0,
-          changePercent: cryptoData.usd_24h_change || 0,
-          high24h: cryptoData.usd_high_24h || cryptoData.usd,
-          low24h: cryptoData.usd_low_24h || cryptoData.usd,
-          marketCap: cryptoData.usd_market_cap,
-          volume24h: cryptoData.usd_24h_vol
-        };
-      });
-      
-      setMarketData(formattedData);
-      setMarketRefreshTime(new Date());
-      setLastMarketUpdate(new Date());
-      setMarketLoading(false);
-      console.log('Market data loaded successfully');
-    } catch (error) {
-      console.error('Full error details:', error);
-      setMarketError(error.message);
-      setMarketLoading(false);
-    }
-  };
-
-  // Fetch crypto data on mount and set up auto-refresh
-  useEffect(() => {
-    fetchCryptoData();
-    
-    // Refresh data every 60 seconds
-    const interval = setInterval(fetchCryptoData, 60000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Authentication functions
   const handleSignUp = async () => {
@@ -309,14 +235,14 @@ const LearnPath = () => {
       setAuthError('Please fill in all fields');
       return;
     }
-    
+
     setIsAuthProcessing(true);
     setAuthError('');
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
       const newUser = userCredential.user;
-      
+
       // Save user profile to Firestore
       await setDoc(doc(db, 'users', newUser.uid), {
         name: authName,
@@ -378,11 +304,11 @@ const LearnPath = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, authEmail, authPassword);
       setUser(userCredential.user);
-      
+
       // Check if user accepted policy
       const userDocRef = doc(db, 'users', userCredential.user.uid);
       const userDocSnap = await getDoc(userDocRef);
-      
+
       if (userDocSnap.exists() && !userDocSnap.data().policyAccepted) {
         setShowAuthModal(false);
         setShowPolicyModal(true);
@@ -390,7 +316,7 @@ const LearnPath = () => {
         setHasStarted(true);
         setShowAuthModal(false);
       }
-      
+
       setAuthEmail('');
       setAuthPassword('');
       setAuthMode('login');
@@ -422,13 +348,13 @@ const LearnPath = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const newUser = result.user;
-      
+
       // Check if user profile exists, if not create it
       const userDocRef = doc(db, 'users', newUser.uid);
       const userDocSnap = await getDoc(userDocRef);
-      
+
       const isNewUser = !userDocSnap.exists();
-      
+
       if (isNewUser) {
         // Create new user profile with Google account info
         await setDoc(userDocRef, {
@@ -471,7 +397,7 @@ const LearnPath = () => {
       setAuthEmail('');
       setAuthPassword('');
       setAuthMode('login');
-      
+
       // Check policy acceptance
       const userData = isNewUser ? null : userDocSnap.data();
       if (!isNewUser && !userData?.policyAccepted) {
@@ -655,8 +581,8 @@ const LearnPath = () => {
           lastLoginDate: today,
           points: (currentStats.points || 0) + pointsToAward,
           experience: (currentStats.experience || 0) + pointsToAward,
-          loginStreak: lastLogin === new Date(new Date().setDate(new Date().getDate() - 1)).toDateString() 
-            ? (currentStats.loginStreak || 0) + 1 
+          loginStreak: lastLogin === new Date(new Date().setDate(new Date().getDate() - 1)).toDateString()
+            ? (currentStats.loginStreak || 0) + 1
             : 1
         }, { merge: true });
       }
@@ -673,7 +599,7 @@ const LearnPath = () => {
       const today = new Date().toDateString();
       const statsSnap = await getDoc(statsRef);
       const currentStats = statsSnap.exists() ? statsSnap.data() : userStats;
-      
+
       const lastActivityDate = currentStats.lastActivityDate;
       const yesterday = new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toDateString();
 
@@ -720,7 +646,7 @@ const LearnPath = () => {
     try {
       const docRef = doc(db, 'users', userId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         setUserProfile({
@@ -743,7 +669,7 @@ const LearnPath = () => {
     try {
       const goalsRef = collection(db, 'users', userId, 'goals');
       const querySnapshot = await getDocs(goalsRef);
-      
+
       const goals = [];
       querySnapshot.forEach((doc) => {
         goals.push({
@@ -751,9 +677,9 @@ const LearnPath = () => {
           ...doc.data()
         });
       });
-      
+
       setLearningGoals(goals);
-      
+
       // Load user stats and check achievements
       await loadUserStats(userId);
       await checkAndAwardAchievements(userId);
@@ -821,7 +747,7 @@ const LearnPath = () => {
     try {
       const groupId = Date.now().toString();
       const groupRef = doc(db, 'studyGroups', groupId);
-      
+
       await setDoc(groupRef, {
         id: groupId,
         name: newGroupName,
@@ -864,7 +790,7 @@ const LearnPath = () => {
       // Load all communities from the studyGroups collection
       const groupsRef = collection(db, 'studyGroups');
       const querySnapshot = await getDocs(groupsRef);
-      
+
       const groups = [];
       querySnapshot.forEach((doc) => {
         groups.push({
@@ -872,7 +798,7 @@ const LearnPath = () => {
           ...doc.data()
         });
       });
-      
+
       setStudyGroups(groups);
     } catch (error) {
       console.error('Error loading study groups:', error);
@@ -886,12 +812,12 @@ const LearnPath = () => {
       // Get the group data first
       const groupRef = doc(db, 'studyGroups', groupId);
       const groupSnap = await getDoc(groupRef);
-      
+
       if (groupSnap.exists()) {
         const groupData = groupSnap.data();
         // Check if user is already a member
         const isAlreadyMember = (groupData.members || []).includes(user.uid);
-        
+
         if (!isAlreadyMember) {
           // Add user to group members
           const updatedMembers = [...(groupData.members || []), user.uid];
@@ -937,7 +863,7 @@ const LearnPath = () => {
 
     try {
       const sessionId = 'session_' + Date.now();
-      
+
       const sessionData = {
         id: sessionId,
         title: sessionTitle,
@@ -957,7 +883,7 @@ const LearnPath = () => {
       };
 
       await setDoc(doc(db, 'studySessions', sessionId), sessionData);
-      
+
       setStudySessions(prev => [...prev, sessionData]);
       setShowCreateSessionModal(false);
       setSessionTitle('');
@@ -967,7 +893,7 @@ const LearnPath = () => {
       setMaxParticipants('5');
       setCurrentSession(sessionData);
       setSessionMessages([]);
-      
+
       // Award points for creating a session
       await awardPoints('COMMUNITY_POST', user.uid);
     } catch (error) {
@@ -981,17 +907,17 @@ const LearnPath = () => {
       const sessionsRef = collection(db, 'studySessions');
       const q = query(sessionsRef, where('active', '==', true));
       const querySnapshot = await getDocs(q);
-      
+
       const sessions = [];
       querySnapshot.forEach((doc) => {
         let sessionData = {
           id: doc.id,
           ...doc.data()
         };
-        
+
         sessions.push(sessionData);
       });
-      
+
       setStudySessions(sessions);
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -1004,17 +930,17 @@ const LearnPath = () => {
     try {
       const sessionRef = doc(db, 'studySessions', sessionId);
       const sessionSnap = await getDoc(sessionRef);
-      
+
       if (sessionSnap.exists()) {
         const sessionData = sessionSnap.data();
-        
+
         if (sessionData.participantCount >= sessionData.maxParticipants) {
           alert('Session is full');
           return;
         }
 
         const isAlreadyMember = sessionData.participants.includes(user.uid);
-        
+
         if (!isAlreadyMember) {
           const updatedParticipants = [...sessionData.participants, user.uid];
           await updateDoc(sessionRef, {
@@ -1042,11 +968,11 @@ const LearnPath = () => {
     try {
       const sessionRef = doc(db, 'studySessions', sessionId);
       const sessionSnap = await getDoc(sessionRef);
-      
+
       if (sessionSnap.exists()) {
         const sessionData = sessionSnap.data();
         const updatedParticipants = sessionData.participants.filter(id => id !== user.uid);
-        
+
         await updateDoc(sessionRef, {
           participants: updatedParticipants,
           participantCount: updatedParticipants.length
@@ -1073,7 +999,7 @@ const LearnPath = () => {
     try {
       const sessionRef = doc(db, 'studySessions', sessionId);
       await updateDoc(sessionRef, { active: false });
-      
+
       setStudySessions(prev => prev.filter(s => s.id !== sessionId));
       setCurrentSession(null);
       setSessionMessages([]);
@@ -1098,11 +1024,11 @@ const LearnPath = () => {
 
       const sessionRef = doc(db, 'studySessions', sessionId);
       const sessionSnap = await getDoc(sessionRef);
-      
+
       if (sessionSnap.exists()) {
         const sessionData = sessionSnap.data();
         const updatedMessages = [...(sessionData.messages || []), messageData];
-        
+
         await updateDoc(sessionRef, {
           messages: updatedMessages
         });
@@ -1174,14 +1100,14 @@ const LearnPath = () => {
     }
 
     // File type validation
-    const allowedTypes = ['application/pdf', 'application/msword', 
+    const allowedTypes = ['application/pdf', 'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'text/plain', 'image/jpeg', 'image/png', 'image/jpg'];
-    
+
     if (!allowedTypes.includes(documentFile.type)) {
       alert('File type not supported. Please upload: PDF, Word, Excel, PowerPoint, Images, or TXT');
       return;
@@ -1196,20 +1122,20 @@ const LearnPath = () => {
       console.log('User UID:', user.uid);
       console.log('File:', documentFile.name);
       console.log('File size:', (documentFile.size / 1024).toFixed(2), 'KB');
-      
+
       // Step 1: Read file as base64
       console.log('Reading file...');
       setUploadProgress(10);
-      
+
       const reader = new FileReader();
-      
+
       reader.onload = async (e) => {
         try {
           setUploadProgress(30);
-          
+
           // Extract base64 data (remove "data:...;base64," prefix)
           const base64Data = e.target.result.split(',')[1];
-          
+
           console.log('File encoded to base64, length:', base64Data.length);
           setUploadProgress(50);
 
@@ -1218,6 +1144,7 @@ const LearnPath = () => {
           const newDocument = {
             id: fileId,
             name: documentName,
+            category: documentCategory,
             fileName: documentFile.name,
             fileSize: (documentFile.size / 1024).toFixed(2) + ' KB',
             uploadedBy: userProfile.name,
@@ -1231,11 +1158,11 @@ const LearnPath = () => {
           console.log('Saving to Firestore...');
           const communityRef = doc(db, 'studyGroups', selectedCommunity.id);
           const communitySnap = await getDoc(communityRef);
-          
+
           if (communitySnap.exists()) {
             const currentDocs = communitySnap.data().documents || [];
             const updatedDocs = [...currentDocs, newDocument];
-            
+
             // Update Firestore
             await updateDoc(communityRef, {
               documents: updatedDocs
@@ -1245,17 +1172,17 @@ const LearnPath = () => {
 
             // Update local state
             setCommunityDocuments(updatedDocs);
-            
+
             // Update selected community with new documents
             setSelectedCommunity(prev => ({
               ...prev,
               documents: updatedDocs
             }));
-            
+
             // Award points for uploading document
             await awardPoints('DOCUMENT_UPLOAD', user.uid);
             setUploadProgress(100);
-            
+
             console.log('=== Document upload COMPLETE ===');
 
             // Reset form and close modal
@@ -1285,12 +1212,12 @@ const LearnPath = () => {
 
       // Start reading the file
       reader.readAsDataURL(documentFile);
-      
+
     } catch (error) {
       console.error('=== UPLOAD ERROR ===');
       console.error('Error message:', error.message);
       console.error('Full error:', error);
-      
+
       setIsUploadingDocument(false);
       setUploadProgress(0);
       alert('Failed to upload document: ' + error.message);
@@ -1304,13 +1231,13 @@ const LearnPath = () => {
       // Remove from Firestore
       const communityRef = doc(db, 'studyGroups', selectedCommunity.id);
       const updatedDocs = communityDocuments.filter(doc => doc.id !== docId);
-      
+
       await updateDoc(communityRef, {
         documents: updatedDocs
       });
 
       setCommunityDocuments(updatedDocs);
-      
+
       // Update selected community with new documents
       setSelectedCommunity(prev => ({
         ...prev,
@@ -1355,11 +1282,11 @@ const LearnPath = () => {
 
   const refreshCommunityDocuments = async () => {
     if (!selectedCommunity || !isFirebaseConfigured) return;
-    
+
     try {
       const communityRef = doc(db, 'studyGroups', selectedCommunity.id);
       const communitySnap = await getDoc(communityRef);
-      
+
       if (communitySnap.exists()) {
         const docs = communitySnap.data().documents || [];
         setCommunityDocuments(docs);
@@ -1372,11 +1299,11 @@ const LearnPath = () => {
   // Load posts from Firestore for the selected community
   const loadCommunityPosts = async (communityId) => {
     if (!communityId || !isFirebaseConfigured) return;
-    
+
     try {
       const communityRef = doc(db, 'studyGroups', communityId);
       const communitySnap = await getDoc(communityRef);
-      
+
       if (communitySnap.exists()) {
         const posts = communitySnap.data().posts || [];
         // Sort posts by creation date in descending order (newest first)
@@ -1398,7 +1325,7 @@ const LearnPath = () => {
   // Save a new post to Firestore
   const savePostToFirestore = async (postContent) => {
     if (!selectedCommunity || !user || !isFirebaseConfigured) return null;
-    
+
     try {
       const newPost = {
         id: Date.now().toString(),
@@ -1411,11 +1338,11 @@ const LearnPath = () => {
       // Get current posts from Firestore
       const communityRef = doc(db, 'studyGroups', selectedCommunity.id);
       const communitySnap = await getDoc(communityRef);
-      
+
       if (communitySnap.exists()) {
         const currentPosts = communitySnap.data().posts || [];
         const updatedPosts = [newPost, ...currentPosts];
-        
+
         // Update Firestore
         await updateDoc(communityRef, {
           posts: updatedPosts
@@ -1445,11 +1372,11 @@ const LearnPath = () => {
     try {
       const communityRef = doc(db, 'studyGroups', selectedCommunity.id);
       const communitySnap = await getDoc(communityRef);
-      
+
       if (communitySnap.exists()) {
         // Filter out the deleted post
         const updatedPosts = (communitySnap.data().posts || []).filter(post => post.id !== postId);
-        
+
         // Update Firestore
         await updateDoc(communityRef, {
           posts: updatedPosts
@@ -1468,20 +1395,20 @@ const LearnPath = () => {
     try {
       setLeaderboardLoading(true);
       const usersRef = collection(db, 'users');
-      
+
       // Get total count of users first
       const countSnapshot = await getDocs(usersRef);
       const totalUsers = countSnapshot.docs.length;
       setLeaderboardTotal(totalUsers);
-      
+
       // Collect all users with their stats efficiently
       const leaderboardUsers = [];
-      
+
       for (const userDoc of countSnapshot.docs) {
         try {
           const statsRef = doc(db, 'users', userDoc.id, 'stats', 'overview');
           const statsSnap = await getDoc(statsRef);
-          
+
           // Include user with stats if available, otherwise use default stats
           const stats = statsSnap.exists() ? statsSnap.data() : {};
           leaderboardUsers.push({
@@ -1510,12 +1437,12 @@ const LearnPath = () => {
 
       // Sort by points (descending)
       leaderboardUsers.sort((a, b) => b.points - a.points);
-      
+
       // Pagination
       const startIdx = (page - 1) * leaderboardItemsPerPage;
       const endIdx = startIdx + leaderboardItemsPerPage;
       const paginatedUsers = leaderboardUsers.slice(startIdx, endIdx);
-      
+
       setLeaderboardData(paginatedUsers);
       setLeaderboardPage(page);
       setLeaderboardLoading(false);
@@ -1600,7 +1527,7 @@ const LearnPath = () => {
 
       const finalGoals = updatedGoals.map(g => g.id === newGoal.id ? finalGoal : g);
       setLearningGoals(finalGoals);
-      
+
       // Save to Firebase or local storage
       if (user && isFirebaseConfigured) {
         await saveGoalToFirestore(finalGoal);
@@ -1608,7 +1535,7 @@ const LearnPath = () => {
       } else {
         await saveGoalsToStorage(finalGoals);
       }
-      
+
       setIsGeneratingRoadmap(false);
 
     } catch (error) {
@@ -1630,14 +1557,14 @@ const LearnPath = () => {
 
       const finalGoals = updatedGoals.map(g => g.id === newGoal.id ? fallbackGoal : g);
       setLearningGoals(finalGoals);
-      
+
       if (user && isFirebaseConfigured) {
         await saveGoalToFirestore(fallbackGoal);
         await awardPoints('CREATE_GOAL', user.uid);
       } else {
         await saveGoalsToStorage(finalGoals);
       }
-      
+
       setIsGeneratingRoadmap(false);
     }
   };
@@ -1657,16 +1584,17 @@ const LearnPath = () => {
         userMsg.content,
         chatMessages,
         userProfile,
-        currentGoal?.title
+        currentGoal?.title,
+        tutorSpecialty
       );
 
       console.log('✅ Got AI response:', aiResponse);
-      const aiMsg = { 
-        role: 'assistant', 
+      const aiMsg = {
+        role: 'assistant',
         content: aiResponse,
-        timestamp: new Date() 
+        timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, aiMsg]);
       setIsSendingMessage(false);
 
@@ -1678,10 +1606,10 @@ const LearnPath = () => {
     } catch (error) {
       console.error('❌ Error in sendMessage:', error);
       console.error('Error message:', error.message);
-      const errorMsg = { 
-        role: 'assistant', 
+      const errorMsg = {
+        role: 'assistant',
         content: `Error: ${error.message || "I'm having trouble connecting right now. Please check your internet connection and try again."}`,
-        timestamp: new Date() 
+        timestamp: new Date()
       };
       setChatMessages(prev => [...prev, errorMsg]);
       setIsSendingMessage(false);
@@ -1691,13 +1619,13 @@ const LearnPath = () => {
   const toggleStepCompletion = async (goalId, stepId) => {
     const updatedGoals = learningGoals.map(goal => {
       if (goal.id === goalId) {
-        const updatedRoadmap = goal.roadmap.map(step => 
+        const updatedRoadmap = goal.roadmap.map(step =>
           step.id === stepId ? { ...step, completed: !step.completed } : step
         );
         const completedSteps = updatedRoadmap.filter(s => s.completed).length;
         const progress = Math.round((completedSteps / updatedRoadmap.length) * 100);
         const nextIncomplete = updatedRoadmap.find(s => !s.completed);
-        
+
         return {
           ...goal,
           roadmap: updatedRoadmap,
@@ -1709,14 +1637,14 @@ const LearnPath = () => {
     });
 
     setLearningGoals(updatedGoals);
-    
+
     // Save to Firebase or local storage
     if (user && isFirebaseConfigured) {
       const updatedGoal = updatedGoals.find(g => g.id === goalId);
       if (updatedGoal) {
         await saveGoalToFirestore(updatedGoal);
         await awardPoints('COMPLETE_STEP', user.uid);
-        
+
         // Check if goal is complete
         if (updatedGoal.progress === 100) {
           await awardPoints('COMPLETE_GOAL', user.uid);
@@ -1725,13 +1653,13 @@ const LearnPath = () => {
     } else {
       await saveGoalsToStorage(updatedGoals);
     }
-    
+
     // Update streak and check achievements
     if (user && isFirebaseConfigured) {
       await updateStreak(user.uid);
       await checkAndAwardAchievements(user.uid);
     }
-    
+
     if (currentGoal) {
       setCurrentGoal(updatedGoals.find(g => g.id === currentGoal.id));
     }
@@ -1740,14 +1668,14 @@ const LearnPath = () => {
   const deleteGoal = async (goalId) => {
     const updatedGoals = learningGoals.filter(goal => goal.id !== goalId);
     setLearningGoals(updatedGoals);
-    
+
     // Delete from Firebase or local storage
     if (user && isFirebaseConfigured) {
       await deleteGoalFromFirestore(goalId);
     } else {
       await saveGoalsToStorage(updatedGoals);
     }
-    
+
     if (currentGoal && currentGoal.id === goalId) {
       setCurrentGoal(null);
       setCurrentView('home');
@@ -1983,7 +1911,7 @@ const LearnPath = () => {
             <input
               type="text"
               value={userProfile.name}
-              onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+              onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
               placeholder="Enter your name"
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
             />
@@ -1993,7 +1921,7 @@ const LearnPath = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
             <select
               value={userProfile.country}
-              onChange={(e) => setUserProfile({...userProfile, country: e.target.value})}
+              onChange={(e) => setUserProfile({ ...userProfile, country: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
             >
               <option value="Malaysia">Malaysia</option>
@@ -2016,13 +1944,13 @@ const LearnPath = () => {
               onChange={(e) => {
                 const level = e.target.value;
                 setUserProfile({
-                  ...userProfile, 
+                  ...userProfile,
                   educationLevel: level,
                   grade: level === 'Primary School' ? 'Year 6' :
-                         level === 'Secondary School' ? 'Form 5' :
-                         level === 'Pre-University' ? 'STPM/A-Levels' :
-                         level === 'University' ? 'Undergraduate' :
-                         'Self-Learning'
+                    level === 'Secondary School' ? 'Form 5' :
+                      level === 'Pre-University' ? 'STPM/A-Levels' :
+                        level === 'University' ? 'Undergraduate' :
+                          'Self-Learning'
                 });
               }}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
@@ -2040,7 +1968,7 @@ const LearnPath = () => {
             <input
               type="text"
               value={userProfile.grade}
-              onChange={(e) => setUserProfile({...userProfile, grade: e.target.value})}
+              onChange={(e) => setUserProfile({ ...userProfile, grade: e.target.value })}
               placeholder="e.g., Form 5, Year 12, Undergraduate"
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
             />
@@ -2164,7 +2092,7 @@ const LearnPath = () => {
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-                
+
                 <div
                   onClick={() => {
                     setCurrentGoal(goal);
@@ -2246,11 +2174,10 @@ const LearnPath = () => {
         {currentGoal.roadmap.map((step, index) => (
           <div
             key={step.id}
-            className={`bg-white border-2 rounded-xl p-6 transition ${
-              step.completed
-                ? 'border-green-500 bg-green-50'
-                : 'border-gray-200 hover:border-blue-500'
-            }`}
+            className={`bg-white border-2 rounded-xl p-6 transition ${step.completed
+              ? 'border-green-500 bg-green-50'
+              : 'border-gray-200 hover:border-blue-500'
+              }`}
           >
             <div className="flex items-start gap-4">
               <button
@@ -2277,8 +2204,8 @@ const LearnPath = () => {
                   <p className="text-sm font-medium text-gray-700">Free Resources:</p>
                   <ul className="space-y-1">
                     {step.resources.map((resource, idx) => (
-                      <li 
-                        key={idx} 
+                      <li
+                        key={idx}
                         onClick={() => {
                           setSelectedResource({
                             title: resource,
@@ -2460,7 +2387,22 @@ const LearnPath = () => {
         <p className="text-blue-100 text-sm mt-1">
           {currentGoal ? `Helping you with ${currentGoal.title}` : 'Ask me anything about your studies'}
         </p>
-        <div className="mt-2 text-blue-100 text-xs">
+        <div className="mt-4">
+          <label className="text-white text-sm font-medium mr-2">Tutor Specialty:</label>
+          <select
+            value={tutorSpecialty}
+            onChange={(e) => setTutorSpecialty(e.target.value)}
+            className="px-3 py-1 rounded text-sm text-gray-900 focus:outline-none"
+          >
+            <option value="General Tutor">General Tutor</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Science">Science</option>
+            <option value="History">History</option>
+            <option value="Languages">Languages</option>
+            <option value="Computer Science">Computer Science</option>
+          </select>
+        </div>
+        <div className="mt-4 text-blue-100 text-xs">
           Teaching at {userProfile.educationLevel} level • {userProfile.country}
         </div>
       </div>
@@ -2498,11 +2440,10 @@ const LearnPath = () => {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-lg rounded-2xl px-4 py-3 ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-900 border-2 border-gray-200'
-              }`}
+              className={`max-w-lg rounded-2xl px-4 py-3 ${msg.role === 'user'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-900 border-2 border-gray-200'
+                }`}
             >
               <p className={`text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'font-semibold' : ''}`}>{msg.content}</p>
               <p className="text-xs opacity-70 mt-1">
@@ -2789,18 +2730,18 @@ const LearnPath = () => {
           <div className="space-y-6">
             {studySessions && studySessions.length > 0 ? (() => {
               let filteredSessions = studySessions.filter(session => {
-                const matchesSearch = !searchSessions || 
+                const matchesSearch = !searchSessions ||
                   session.title.toLowerCase().includes(searchSessions.toLowerCase()) ||
                   (session.description && session.description.toLowerCase().includes(searchSessions.toLowerCase()));
-                
+
                 const matchesCommunity = filterSessionCommunity === 'All' || session.community === filterSessionCommunity;
-                
+
                 return matchesSearch && matchesCommunity;
               });
 
               // Sort sessions
               filteredSessions.sort((a, b) => {
-                switch(sortSessions) {
+                switch (sortSessions) {
                   case 'oldest':
                     return new Date(a.createdAt) - new Date(b.createdAt);
                   case 'most-participants':
@@ -2840,7 +2781,7 @@ const LearnPath = () => {
                             <p className="flex items-center gap-2">
                               <span>👥</span>
                               <span className="text-gray-700">
-                                {session.participantCount}/{session.maxParticipants} 
+                                {session.participantCount}/{session.maxParticipants}
                                 {session.participantCount >= session.maxParticipants && <span className="ml-2 text-red-600 font-bold">(Full)</span>}
                               </span>
                             </p>
@@ -2854,11 +2795,10 @@ const LearnPath = () => {
                         <button
                           onClick={() => joinStudySession(session.id)}
                           disabled={session.participantCount >= session.maxParticipants}
-                          className={`w-full py-2 rounded-lg transition font-medium ${
-                            session.participantCount >= session.maxParticipants
-                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                              : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          }`}
+                          className={`w-full py-2 rounded-lg transition font-medium ${session.participantCount >= session.maxParticipants
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
                         >
                           {session.participantCount >= session.maxParticipants ? 'Session Full' : 'Join Session'}
                         </button>
@@ -2881,11 +2821,10 @@ const LearnPath = () => {
                           <button
                             key={page}
                             onClick={() => setSessionPage(page)}
-                            className={`px-3 py-2 rounded-lg transition ${
-                              sessionPage === page
-                                ? 'bg-indigo-600 text-white'
-                                : 'border-2 border-gray-300 hover:bg-gray-50'
-                            }`}
+                            className={`px-3 py-2 rounded-lg transition ${sessionPage === page
+                              ? 'bg-indigo-600 text-white'
+                              : 'border-2 border-gray-300 hover:bg-gray-50'
+                              }`}
                           >
                             {page}
                           </button>
@@ -3050,9 +2989,9 @@ const LearnPath = () => {
 
               <div className="bg-indigo-50 border-l-4 border-indigo-600 p-4 rounded">
                 <p className="text-sm text-indigo-900">
-                  <strong>💡 Examples:</strong><br/>
-                  • Google Meet: https://meet.google.com/abc-defg-hij<br/>
-                  • Zoom: https://zoom.us/j/123456789<br/>
+                  <strong>💡 Examples:</strong><br />
+                  • Google Meet: https://meet.google.com/abc-defg-hij<br />
+                  • Zoom: https://zoom.us/j/123456789<br />
                   • Microsoft Teams: https://teams.microsoft.com/...
                 </p>
               </div>
@@ -3126,7 +3065,7 @@ const LearnPath = () => {
                       if (confirm('Leave this community?')) {
                         try {
                           const members = (selectedCommunity.members || []).filter(m => m !== user?.uid);
-                          await updateDoc(doc(db, 'studyGroups', selectedCommunity.id), { 
+                          await updateDoc(doc(db, 'studyGroups', selectedCommunity.id), {
                             members,
                             memberCount: members.length
                           });
@@ -3233,7 +3172,7 @@ const LearnPath = () => {
                     let dateStr = '';
                     try {
                       if (doc.uploadedAt) {
-                        const date = typeof doc.uploadedAt === 'string' 
+                        const date = typeof doc.uploadedAt === 'string'
                           ? new Date(doc.uploadedAt)
                           : doc.uploadedAt?.toDate?.() || new Date(doc.uploadedAt);
                         dateStr = date.toLocaleDateString();
@@ -3248,7 +3187,14 @@ const LearnPath = () => {
                           <div className="flex items-start gap-3 flex-1">
                             <FileText className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
                             <div>
-                              <p className="font-semibold text-gray-900">{doc.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-gray-900">{doc.name}</p>
+                                {doc.category && (
+                                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    {doc.category}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-600">{doc.fileName}</p>
                               <div className="flex gap-4 text-xs text-gray-600 mt-2">
                                 <span>👤 {doc.uploadedBy}</span>
@@ -3372,7 +3318,7 @@ const LearnPath = () => {
                 .filter((group) => {
                   const subjectMatch = filterSubject === 'All' || filterSubject === 'All Subjects' || group.subject === filterSubject;
                   const levelMatch = filterLevel === 'All' || filterLevel === 'All Levels' || group.level === filterLevel;
-                  const searchMatch = searchCommunity === '' || 
+                  const searchMatch = searchCommunity === '' ||
                     group.name.toLowerCase().includes(searchCommunity.toLowerCase()) ||
                     (group.description || '').toLowerCase().includes(searchCommunity.toLowerCase()) ||
                     (group.subject || '').toLowerCase().includes(searchCommunity.toLowerCase());
@@ -3403,11 +3349,10 @@ const LearnPath = () => {
                         e.stopPropagation();
                         joinStudyGroup(group.id);
                       }}
-                      className={`w-full px-4 py-2 rounded-lg transition font-medium ${
-                        group.members?.includes(user?.uid)
-                          ? 'bg-gray-100 text-gray-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
+                      className={`w-full px-4 py-2 rounded-lg transition font-medium ${group.members?.includes(user?.uid)
+                        ? 'bg-gray-100 text-gray-600'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
                     >
                       {group.members?.includes(user?.uid) ? 'Already Joined ✓' : 'Join Community'}
                     </button>
@@ -3473,7 +3418,7 @@ const LearnPath = () => {
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Steps Completed</p>
             <div className="w-full bg-gray-200 rounded-full h-3">
-              <div className="bg-blue-600 h-3 rounded-full" style={{width: `${Math.min((userStats.stepsCompleted || 0) / 2, 100)}%`}}></div>
+              <div className="bg-blue-600 h-3 rounded-full" style={{ width: `${Math.min((userStats.stepsCompleted || 0) / 2, 100)}%` }}></div>
             </div>
             <p className="text-xs text-gray-600 mt-1">{userStats.stepsCompleted || 0} steps</p>
           </div>
@@ -3756,7 +3701,7 @@ const LearnPath = () => {
               </div>
               <div className="mt-2 space-y-1 text-sm">
                 <p className="font-semibold text-green-600">Earn:</p>
-                <p className="text-gray-600">• +20 points for joining<br/>• +10 points per post<br/>• +15 points per document upload</p>
+                <p className="text-gray-600">• +20 points for joining<br />• +10 points per post<br />• +15 points per document upload</p>
               </div>
             </div>
           </div>
@@ -3785,9 +3730,9 @@ const LearnPath = () => {
                 💡 <strong>Tip:</strong> Each achievement unlocks bonus points. Aim for 2000+ points to become a LearnPath Legend! 👑
               </div>
               <p className="mt-3 text-sm">
-                <strong>Available Badges:</strong><br/>
-                🎯 Goal Setter • 📚 Step Forward • 🏆 Goal Master • 💬 Chat Warrior<br/>
-                ⭐ Community Star • 🔥 On Fire! • 📄 Knowledge Sharer • 🦋 Social Butterfly<br/>
+                <strong>Available Badges:</strong><br />
+                🎯 Goal Setter • 📚 Step Forward • 🏆 Goal Master • 💬 Chat Warrior<br />
+                ⭐ Community Star • 🔥 On Fire! • 📄 Knowledge Sharer • 🦋 Social Butterfly<br />
                 ⚡ Speed Learner • 👑 LearnPath Legend
               </p>
             </div>
@@ -4000,304 +3945,152 @@ const LearnPath = () => {
   const renderLeaderboard = () => {
     const totalPages = Math.ceil(leaderboardTotal / leaderboardItemsPerPage);
     const startRank = (leaderboardPage - 1) * leaderboardItemsPerPage + 1;
-    
-    return (
-    <div className="p-6 space-y-6">
-      <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white rounded-xl p-8 shadow-lg">
-        <h1 className="text-4xl font-bold mb-2">🏆 Global Leaderboard</h1>
-        <p className="text-orange-100">Top performers in the LearnPath community ({leaderboardTotal.toLocaleString()} users)</p>
-      </div>
-
-      {leaderboardData.length > 0 ? (
-        <>
-          <div className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-yellow-100 to-orange-100 border-b-2 border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left font-bold text-gray-900">Rank</th>
-                    <th className="px-6 py-4 text-left font-bold text-gray-900">Student</th>
-                    <th className="px-6 py-4 text-center font-bold text-gray-900">Points</th>
-                    <th className="px-6 py-4 text-center font-bold text-gray-900">Level</th>
-                    <th className="px-6 py-4 text-center font-bold text-gray-900">Streak</th>
-                    <th className="px-6 py-4 text-center font-bold text-gray-900">Goals</th>
-                    <th className="px-6 py-4 text-center font-bold text-gray-900">Badges</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboardData.map((entry, idx) => {
-                    const globalRank = startRank + idx;
-                    return (
-                      <tr key={entry.userId} className={`border-b border-gray-200 hover:bg-blue-50 transition ${globalRank <= 3 ? 'bg-yellow-50' : ''}`}>
-                        <td className="px-6 py-4">
-                          <span className="font-bold text-lg">
-                            {globalRank === 1 && '🥇 #1'}
-                            {globalRank === 2 && '🥈 #2'}
-                            {globalRank === 3 && '🥉 #3'}
-                            {globalRank > 3 && `#${globalRank}`}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-semibold text-gray-900">{entry.name}</p>
-                            {user?.uid === entry.userId && <p className="text-xs text-blue-600">Your Account</p>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="font-bold text-blue-600 text-lg">{entry.points.toLocaleString()}</span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">Level {entry.level}</span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-lg">{entry.streak > 0 ? `${entry.streak} 🔥` : '—'}</span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="font-semibold text-green-600">{entry.goalsCompleted}</span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">{entry.badgesCount}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <button
-                onClick={() => loadLeaderboard(leaderboardPage - 1)}
-                disabled={leaderboardPage === 1 || leaderboardLoading}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-              >
-                ← Previous
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (leaderboardPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (leaderboardPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = leaderboardPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => loadLeaderboard(pageNum)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition ${
-                        leaderboardPage === pageNum
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => loadLeaderboard(leaderboardPage + 1)}
-                disabled={leaderboardPage === totalPages || leaderboardLoading}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-              >
-                Next →
-              </button>
-
-              <span className="text-gray-600 ml-4">
-                Page {leaderboardPage} of {totalPages}
-              </span>
-            </div>
-          )}
-        </>
-      ) : leaderboardLoading ? (
-        <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
-          <p className="text-gray-600 text-lg">Loading leaderboard...</p>
-        </div>
-      ) : (
-        <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
-          <p className="text-gray-600 text-lg">No leaderboard data available</p>
-        </div>
-      )}
-
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-300">
-        <h3 className="text-xl font-bold text-gray-900 mb-3">💡 How to Climb the Leaderboard</h3>
-        <ul className="space-y-2 text-gray-700">
-          <li>✅ Complete learning goals for 200 points each</li>
-          <li>✅ Finish learning steps daily for 25 points each</li>
-          <li>✅ Participate in AI Tutor conversations for 5 points each</li>
-          <li>✅ Contribute to communities with posts and documents</li>
-          <li>✅ Maintain daily login streaks for consistent bonus points</li>
-          <li>✅ Unlock achievement badges for extra points</li>
-        </ul>
-      </div>
-    </div>
-  );
-  };
-
-  const renderMarketDashboard = () => {
-    const selectedData = marketData.find(m => m.id === selectedMarketSymbol);
-
-    // Loading state
-    if (marketLoading) {
-      return (
-        <div className="p-6">
-          <div className="bg-gradient-to-r from-green-500 via-teal-500 to-blue-500 text-white rounded-xl p-8 shadow-lg mb-6">
-            <h1 className="text-4xl font-bold mb-2">🪙 Live Crypto Market Dashboard</h1>
-            <p className="text-teal-100">Real-time cryptocurrency market data powered by CoinGecko</p>
-          </div>
-          <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
-            <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-500" />
-            <p className="text-gray-600 text-lg">Loading real-time crypto data...</p>
-          </div>
-        </div>
-      );
-    }
-
-    // Error state
-    if (marketError) {
-      return (
-        <div className="p-6">
-          <div className="bg-gradient-to-r from-green-500 via-teal-500 to-blue-500 text-white rounded-xl p-8 shadow-lg mb-6">
-            <h1 className="text-4xl font-bold mb-2">🪙 Live Crypto Market Dashboard</h1>
-            <p className="text-teal-100">Real-time cryptocurrency market data powered by CoinGecko</p>
-          </div>
-          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6">
-            <p className="text-red-800 font-semibold">Error loading market data: {marketError}</p>
-            <button
-              onClick={fetchCryptoData}
-              className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      );
-    }
 
     return (
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 text-white rounded-xl p-8 shadow-lg">
-          <h1 className="text-4xl font-bold mb-2">🪙 Live Crypto Market Dashboard</h1>
-          <p className="text-yellow-100">Real-time cryptocurrency market data powered by CoinGecko</p>
+        <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white rounded-xl p-8 shadow-lg">
+          <h1 className="text-4xl font-bold mb-2">🏆 Global Leaderboard</h1>
+          <p className="text-orange-100">Top performers in the LearnPath community ({leaderboardTotal.toLocaleString()} users)</p>
         </div>
 
-        {/* Market Overview Cards - All Cryptos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {marketData.map((market) => (
-            <div
-              key={market.id}
-              onClick={() => setSelectedMarketSymbol(market.id)}
-              className={`p-4 rounded-xl cursor-pointer transition transform hover:scale-105 border-2 ${
-                selectedMarketSymbol === market.id
-                  ? 'bg-blue-50 border-blue-400 shadow-lg'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <h3 className="font-bold text-gray-900">{market.symbol}</h3>
-              <p className="text-sm text-gray-600 mb-2">{market.name}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">${market.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span className={`text-lg font-semibold ${market.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {market.changePercent >= 0 ? '↑' : '↓'} {Math.abs(market.changePercent).toFixed(2)}%
+        {leaderboardData.length > 0 ? (
+          <>
+            <div className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-yellow-100 to-orange-100 border-b-2 border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left font-bold text-gray-900">Rank</th>
+                      <th className="px-6 py-4 text-left font-bold text-gray-900">Student</th>
+                      <th className="px-6 py-4 text-center font-bold text-gray-900">Points</th>
+                      <th className="px-6 py-4 text-center font-bold text-gray-900">Level</th>
+                      <th className="px-6 py-4 text-center font-bold text-gray-900">Streak</th>
+                      <th className="px-6 py-4 text-center font-bold text-gray-900">Goals</th>
+                      <th className="px-6 py-4 text-center font-bold text-gray-900">Badges</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData.map((entry, idx) => {
+                      const globalRank = startRank + idx;
+                      return (
+                        <tr key={entry.userId} className={`border-b border-gray-200 hover:bg-blue-50 transition ${globalRank <= 3 ? 'bg-yellow-50' : ''}`}>
+                          <td className="px-6 py-4">
+                            <span className="font-bold text-lg">
+                              {globalRank === 1 && '🥇 #1'}
+                              {globalRank === 2 && '🥈 #2'}
+                              {globalRank === 3 && '🥉 #3'}
+                              {globalRank > 3 && `#${globalRank}`}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-semibold text-gray-900">{entry.name}</p>
+                              {user?.uid === entry.userId && <p className="text-xs text-blue-600">Your Account</p>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="font-bold text-blue-600 text-lg">{entry.points.toLocaleString()}</span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">Level {entry.level}</span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="text-lg">{entry.streak > 0 ? `${entry.streak} 🔥` : '—'}</span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="font-semibold text-green-600">{entry.goalsCompleted}</span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">{entry.badgesCount}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  onClick={() => loadLeaderboard(leaderboardPage - 1)}
+                  disabled={leaderboardPage === 1 || leaderboardLoading}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                >
+                  ← Previous
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (leaderboardPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (leaderboardPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = leaderboardPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => loadLeaderboard(pageNum)}
+                        className={`w-10 h-10 rounded-lg font-semibold transition ${leaderboardPage === pageNum
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => loadLeaderboard(leaderboardPage + 1)}
+                  disabled={leaderboardPage === totalPages || leaderboardLoading}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                >
+                  Next →
+                </button>
+
+                <span className="text-gray-600 ml-4">
+                  Page {leaderboardPage} of {totalPages}
                 </span>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Detailed Market View */}
-        {selectedData && (
-          <div className="bg-white border-2 border-gray-200 rounded-xl p-8 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900">{selectedData.symbol}</h2>
-                <p className="text-gray-600">{selectedData.name}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-4xl font-bold text-gray-900">${selectedData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                <div className={`text-2xl font-bold ${selectedData.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {selectedData.changePercent >= 0 ? '↑ +' : '↓ '}{selectedData.changePercent.toFixed(2)}%
-                </div>
-              </div>
-            </div>
-
-            {/* Market Statistics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-300">
-                <p className="text-sm text-gray-600 font-semibold">CURRENT PRICE</p>
-                <p className="text-3xl font-bold text-gray-900">${selectedData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-300">
-                <p className="text-sm text-gray-600 font-semibold">24H VOLUME</p>
-                <p className="text-3xl font-bold text-gray-900">${selectedData.volume24h ? (selectedData.volume24h / 1000000).toFixed(2) : 'N/A'}M</p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border-2 border-purple-300">
-                <p className="text-sm text-gray-600 font-semibold">24H HIGH</p>
-                <p className="text-3xl font-bold text-gray-900">${selectedData.high24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border-2 border-orange-300">
-                <p className="text-sm text-gray-600 font-semibold">24H LOW</p>
-                <p className="text-3xl font-bold text-gray-900">${selectedData.low24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-            </div>
+            )}
+          </>
+        ) : leaderboardLoading ? (
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
+            <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
+            <p className="text-gray-600 text-lg">Loading leaderboard...</p>
+          </div>
+        ) : (
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
+            <p className="text-gray-600 text-lg">No leaderboard data available</p>
           </div>
         )}
 
-        {/* Crypto Trading Tips for Learners */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-300">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">💡 Crypto Trading Lessons & Tips</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <h4 className="font-bold text-gray-900 mb-2">📊 Understanding Price Movement</h4>
-              <p className="text-sm text-gray-700">Crypto markets operate 24/7. Watch volume, support/resistance levels, and use technical analysis to predict price direction. Study past trades to learn patterns.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <h4 className="font-bold text-gray-900 mb-2">📈 Analyzing Your Past Trades</h4>
-              <p className="text-sm text-gray-700">Track every trade you make. Did you enter at support? What was your exit strategy? Identify winning and losing patterns in your own trading history.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
-              <h4 className="font-bold text-gray-900 mb-2">⚡ Risk Management First</h4>
-              <p className="text-sm text-gray-700">Never risk more than 2% of your account on a single trade. Set stop losses BEFORE entering. Protect your capital - that's the foundation of long-term success.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
-              <h4 className="font-bold text-gray-900 mb-2">🎯 Adapt to Your Learning Style</h4>
-              <p className="text-sm text-gray-700">Are you a technical trader or fundamental analyst? Day trader or swing trader? Build a trading plan that matches YOUR strengths and personality, not someone else's.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Market Status */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white border-2 border-gray-200 rounded-xl p-4 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="font-semibold text-gray-900">Market Status: <span className="text-green-600">LIVE 24/7</span></span>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>Last updated: {marketRefreshTime.toLocaleTimeString()}</span>
-            <button
-              onClick={fetchCryptoData}
-              className="px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition font-semibold"
-            >
-              Refresh Now
-            </button>
-          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">💡 How to Climb the Leaderboard</h3>
+          <ul className="space-y-2 text-gray-700">
+            <li>✅ Complete learning goals for 200 points each</li>
+            <li>✅ Finish learning steps daily for 25 points each</li>
+            <li>✅ Participate in AI Tutor conversations for 5 points each</li>
+            <li>✅ Contribute to communities with posts and documents</li>
+            <li>✅ Maintain daily login streaks for consistent bonus points</li>
+            <li>✅ Unlock achievement badges for extra points</li>
+          </ul>
         </div>
       </div>
     );
   };
+
+
 
   if (isAuthLoading) {
     return (
@@ -4379,22 +4172,20 @@ const LearnPath = () => {
           <div className="flex gap-2 pt-4 border-t border-gray-100 overflow-x-auto pb-2">
             <button
               onClick={() => setCurrentView('home')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'home'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'home'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <Home className="w-4 h-4" />
               Home
             </button>
             <button
               onClick={() => currentGoal && setCurrentView('roadmap')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'roadmap'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              } ${!currentGoal ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'roadmap'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                } ${!currentGoal ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={!currentGoal}
             >
               <Target className="w-4 h-4" />
@@ -4402,43 +4193,31 @@ const LearnPath = () => {
             </button>
             <button
               onClick={() => setCurrentView('tutor')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'tutor'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'tutor'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <MessageCircle className="w-4 h-4" />
               AI Tutor
             </button>
             <button
               onClick={() => setCurrentView('community')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'community'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'community'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <Users className="w-4 h-4" />
               Community
             </button>
-            <button
-              onClick={() => setCurrentView('market')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'market'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              📈 Market
-            </button>
+
             <button
               onClick={() => setCurrentView('analytics')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'analytics'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'analytics'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               📊 Analytics
             </button>
@@ -4447,21 +4226,19 @@ const LearnPath = () => {
                 await loadLeaderboard();
                 setCurrentView('leaderboard');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'leaderboard'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'leaderboard'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               🏆 Leaderboard
             </button>
             <button
               onClick={() => setCurrentView('achievements')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'achievements'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'achievements'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <Sparkles className="w-4 h-4" />
               Achievements
@@ -4471,21 +4248,19 @@ const LearnPath = () => {
                 loadStudySessions();
                 setCurrentView('sessions');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'sessions'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'sessions'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               📚 Sessions
             </button>
             <button
               onClick={() => setCurrentView('instructions')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${
-                currentView === 'instructions'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap ${currentView === 'instructions'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               ℹ️ Help
             </button>
@@ -4499,7 +4274,7 @@ const LearnPath = () => {
         {showResourcePage && renderResourcePage()}
         {currentView === 'tutor' && renderTutor()}
         {currentView === 'community' && renderCommunity()}
-        {currentView === 'market' && renderMarketDashboard()}
+
         {currentView === 'analytics' && renderAnalytics()}
         {currentView === 'leaderboard' && renderLeaderboard()}
         {currentView === 'achievements' && renderGamification()}
@@ -4670,14 +4445,14 @@ const LearnPath = () => {
               <button
                 onClick={async () => {
                   if (!newPostContent.trim()) return;
-                  
+
                   // Save post to Firestore
                   const savedPost = await savePostToFirestore(newPostContent);
-                  
+
                   if (savedPost) {
                     setNewPostContent('');
                     setShowPostModal(false);
-                    
+
                     // Award points for creating post
                     if (user && isFirebaseConfigured) {
                       await awardPoints('COMMUNITY_POST', user.uid);
@@ -4724,6 +4499,21 @@ const LearnPath = () => {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <select
+                  value={documentCategory}
+                  onChange={(e) => setDocumentCategory(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none bg-white"
+                  disabled={isUploadingDocument}
+                >
+                  <option value="Notes">Notes</option>
+                  <option value="Assignments">Assignments</option>
+                  <option value="Reference">Reference</option>
+                  <option value="Past Papers">Past Papers</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Choose File *</label>
                 <input
                   type="file"
@@ -4758,7 +4548,7 @@ const LearnPath = () => {
                     <span className="text-sm text-gray-600">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
                     />

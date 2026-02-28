@@ -50,16 +50,16 @@ Respond ONLY with valid JSON, no markdown, no preamble:
     }
 
     const data = await response.json();
-    
+
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response structure from Gemini API');
     }
 
     let roadmapText = data.candidates[0].content.parts[0].text.trim();
     roadmapText = roadmapText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     const generatedRoadmap = JSON.parse(roadmapText);
-    
+
     const formattedRoadmap = generatedRoadmap.map((step, index) => ({
       id: index + 1,
       title: step.title,
@@ -84,15 +84,16 @@ Respond ONLY with valid JSON, no markdown, no preamble:
  * @returns {Promise<string>} AI tutor's response
  */
 export const getTutorResponse = async (
-  userMessage, 
-  conversationHistory = [], 
-  userProfile = {}, 
-  currentGoalTitle = null
+  userMessage,
+  conversationHistory = [],
+  userProfile = {},
+  currentGoalTitle = null,
+  tutorSpecialty = 'General Tutor'
 ) => {
   console.log('📨 getTutorResponse called');
   console.log('User message:', userMessage);
   console.log('API Key present:', !!GEMINI_API_KEY);
-  
+
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to .env.local');
   }
@@ -109,7 +110,7 @@ export const getTutorResponse = async (
         {
           role: "user",
           parts: [{
-            text: `You are an AI tutor helping a ${userProfile.educationLevel || 'Secondary School'} student (${userProfile.grade || 'Form 5'}) from ${userProfile.country || 'Malaysia'}${currentGoalTitle ? ` learning about "${currentGoalTitle}"` : ''}. 
+            text: `You are an AI tutor specializing in ${tutorSpecialty} helping a ${userProfile.educationLevel || 'Secondary School'} student (${userProfile.grade || 'Form 5'}) from ${userProfile.country || 'Malaysia'}${currentGoalTitle ? ` learning about "${currentGoalTitle}"` : ''}. 
 
 Student's question: ${userMessage}
 
@@ -143,7 +144,7 @@ Be encouraging and educational. Keep responses concise but thorough. Format for 
 
     console.log('📡 Sending request to Gemini API...');
     console.log('Endpoint:', `${GEMINI_API_URL}?key=${GEMINI_API_KEY.substring(0, 10)}...`);
-    
+
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
@@ -161,7 +162,7 @@ Be encouraging and educational. Keep responses concise but thorough. Format for 
     }
 
     const data = await response.json();
-    
+
     console.log('📦 Response data structure:', {
       hasCandidates: !!data.candidates,
       candidatesLength: data.candidates?.length,
@@ -176,7 +177,7 @@ Be encouraging and educational. Keep responses concise but thorough. Format for 
 
     const responseText = data.candidates[0].content.parts[0].text;
     console.log('✅ AI Response received:', responseText.substring(0, 100) + '...');
-    
+
     return responseText;
   } catch (error) {
     console.error('❌ Error in getTutorResponse:', error);
