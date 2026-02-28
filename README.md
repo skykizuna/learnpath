@@ -47,10 +47,11 @@ The platform follows a modern, scalable client-serverless architecture leveragin
   - `goals`: User-defined academic goals and generated roadmaps.
   - `communities` & `posts`: Study group interactions.
   - `sessions`: Scheduled automated study sessions.
-- **Storage**: Firebase Storage for hosting student document uploads (PDFs, images).
+- **Storage**: Firebase Storage for hosting student document uploads (PDFs, images) with categorized metadata for streamlined resource discovery.
 
 ### AI Integration
 - **Gemini API**: Acts as the intelligence layer, dynamically incorporated via serverless calls (`geminiService.js`).
+- **AI Tutor Personalities**: System prompts dynamically adjust based on user-selected `tutorSpecialty` (e.g., Math Expert, General Tutor).
 - Structured prompt engineering ensures deterministic JSON outputs for roadmaps and formatted Markdown for the AI Tutor.
 
 ---
@@ -66,8 +67,8 @@ The tutor feature passes user profile parameters (education level, grade, countr
 ### Gamification & Tracking
 User progress is tracked through Firestore observer patterns. Completing goals or logging in consecutively updates the `streak` and increments user points. Badges are dynamically awarded upon reaching thresholds (e.g., "7 Day Streak", "First Goal Completed") using the `checkAndAwardAchievements` utility.
 
-### Community & Study Groups
-Real-time listeners (`onSnapshot`) synchronize study group posts and user statuses. Users can upload specific study materials to Firebase Storage, attaching download URLs to community discussion threads for peer collaborative learning. 
+### Document Categorisation & Study Groups
+Real-time listeners (`onSnapshot`) synchronize study group posts and user statuses. Users can upload specific study materials to Firebase Storage. During the upload process, documents are categorized (e.g., Notes, Assignments, Past Papers) and attached to the study group's resource library with secure download URLs for peer collaborative learning. 
 
 ---
 
@@ -76,12 +77,14 @@ Real-time listeners (`onSnapshot`) synchronize study group posts and user status
 - **AI Formatting Inconsistencies**: The Gemini API occasionally returned Markdown formatting around JSON objects (e.g., \`\`\`json\`), which broke the roadmap generation. Implemented a robust RegExp cleanup step in `geminiService.js` to strip Markdown before parsing.
 - **Real-time State Synchronization**: Ensuring gamification points and streaks updated instantaneously across different browser tabs required careful management of Firestore listeners and React effects.
 - **Prompt Engineering Limitations**: Guiding the AI to provide age-appropriate, syllabus-aligned answers for varying educational systems required extensive prompt tuning to ensure instructions were strictly followed.
+- **Document Metadata Handling**: Implementing the PDF note categorization required ensuring robust state management during uploads to correctly map Firebase Storage references into Firestore documentation arrays for instant access.
 
 ---
 
 ## 🗺️ Future Roadmap
 
 - **Interactive Quizzes**: Implement AI-generated micro-quizzes based on uploaded documents to test user knowledge dynamically.
+- **Automated Document Analysis**: Leverage Gemini 2.0 to automatically generate summaries and flashcards directly from categorized PDF uploads.
 - **Video/Audio Chat Sessions**: Integrate WebRTC or a service like Agora for live peer-to-peer study sessions natively within the app.
 - **Mobile Application**: Port the React web app to React Native for a dedicated iOS and Android experience with native push notifications.
 - **Advanced Gamification**: Introduce seasonal leaderboards, customizable avatars, and in-game economy based on study hours.
